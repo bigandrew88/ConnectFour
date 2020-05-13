@@ -5,6 +5,15 @@
     <title>Canvas tutorial</title>
     <script type="text/javascript">
         
+        const state = {
+            PLAYING: 'playing',
+            REDWINS: 'redwins',
+            YELLOWWINS: 'yellowwins',
+            DRAW: 'draw'
+        }
+        
+        var gameState = state.PLAYING;
+        
         let boardImage = new Image();
         boardImage.src = "Assets/c4Board.png";
         
@@ -13,6 +22,15 @@
         
         var player2Image = new Image();
         player2Image.src = "Assets/player2.png";
+        
+        var playAgainImage = new Image();
+        playAgainImage.src = "Assets/playAgain.png";
+        
+        var redWinsImage = new Image();
+        redWinsImage.src = "Assets/redWins.png";
+        
+        var yellowWinsImage = new Image();
+        yellowWinsImage.src = "Assets/yellowWins.png";
         
         var player1OffSet = [13,10];
         var player2OffSet = [13,10];
@@ -24,6 +42,7 @@
             board[i].fill(0);
         }
         
+        
         //board[0][3] = 1
         //board[4][5] = 2
         function getMousePosition(canvas, event) { 
@@ -31,19 +50,32 @@
             let x = event.clientX - rect.left; 
             let y = event.clientY - rect.top; 
             console.log("Coordinate x: " + x,  "Coordinate y: " + y); 
+            
+            if (gameState == state.PLAYING){
             let col = parseInt(x/100);
             console.log(col);
             placePiece(col);
+            }else{
+               if( x >= 200 && x <= 532 && y >= 350 && y <= 449){
+                   gameState = state.PLAYING;
+                   for(let i=0;i<7;i++){
+                    board[i].fill(0);
+                   }
+                   draw();
+               } 
+            }
         }
         
         function placePiece(col){
-            for(let i=5;i>=0;i--){
-              if(board[col][i] == 0){
+            for(let row=5; row>=0; row--){
+              if(board[col][row] == 0){
                   if(player == 1){
-                      board[col][i] = 1;
+                      board[col][row] = 1;
+                      checkWin(col,row, player);
                       player = 2;
                   }else{
-                      board[col][i] = 2;
+                      board[col][row] = 2;
+                      checkWin(col,row, player);
                       player = 1;
                   }
                   break;
@@ -51,6 +83,37 @@
             }
             draw();
         }
+        
+    function checkWin(col,row, player){
+            //check vertical
+        let rowToCheck = row;
+        let count = 1;
+        while(rowToCheck > 0){
+            rowToCheck ++;
+            if (board[col][rowToCheck] == player){
+                count ++;
+            }else{
+                break;
+            }
+            
+            if( count >= 4){
+                gameState = player == 1 ? state.YELLOWWINS : state.REDWINS;
+                console.log("GAME OVER");
+            }
+        }
+        
+        rowToCheck = row;
+        while(rowToCheck < 5){
+            rowToCheck --;
+            if (board[col][rowToCheck] == player){
+                count ++;
+            }else{
+                break;
+            }
+        }
+        }
+        
+        
       function draw() {
         var canvas = document.getElementById('tutorial');
         if (canvas.getContext) {
@@ -79,6 +142,13 @@
                     //ctx.strokeRect(col * 100, row * 100,100,100);
                 }
            }
+          if (gameState == state.REDWINS){
+            ctx.drawImage(redWinsImage,200,200)
+            ctx.drawImage(playAgainImage,200,350);
+          }else if (gameState == state.YELLOWWINS){
+            ctx.drawImage(yellowWinsImage,200,200)
+            ctx.drawImage(playAgainImage,200,350);
+          }
       }
         
         window.onload = function(){
@@ -96,6 +166,6 @@
     </style>
   </head>
   <body>
-    <canvas id="tutorial" width="700" height="600"></canvas>
+    <canvas id="tutorial" width="726" height="626"></canvas>
   </body>
 </html>
