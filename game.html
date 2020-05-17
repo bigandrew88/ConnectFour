@@ -9,7 +9,8 @@
             PLAYING: 'playing',
             REDWINS: 'redwins',
             YELLOWWINS: 'yellowwins',
-            DRAW: 'draw'
+            DRAW: 'draw',
+            DROPPINGPIECE: 'droppingpiece'
         }
         
         var gameState = state.PLAYING;
@@ -32,8 +33,15 @@
         var yellowWinsImage = new Image();
         yellowWinsImage.src = "Assets/yellowWins.png";
         
-        var player1OffSet = [13,10];
-        var player2OffSet = [13,10];
+        var blackQuad = new Image();
+        blackQuad.src = "Assets/BlackQuad.png";
+        
+        var startPos = new Array(4); // 0) horizontal start of drop, 1) vertical start of drop, 2) horizontal colum start of drop, 3) vertical row start of drop
+        var endPos = new Array(4); 
+        var dropTimer;
+        
+        var player1OffSet = [12,9];
+        var player2OffSet = [11,6];
         
         var player = 1;
         let board = new Array(7);
@@ -42,9 +50,6 @@
             board[i].fill(0);
         }
         
-        
-        //board[0][3] = 1
-        //board[4][5] = 2
         function getMousePosition(canvas, event) { 
             let rect = canvas.getBoundingClientRect(); 
             let x = event.clientX - rect.left; 
@@ -53,9 +58,8 @@
             
             if (gameState == state.PLAYING){
             let col = parseInt(x/100);
-            console.log(col);
             placePiece(col);
-            }else{
+            }else if ( gameState == state.DRAW || gameState == state.REDWINS || gameState == state.YELLOWWINS){
                if( x >= 200 && x <= 532 && y >= 350 && y <= 449){
                    gameState = state.PLAYING;
                    for(let i=0;i<7;i++){
@@ -70,54 +74,114 @@
             for(let row=5; row>=0; row--){
               if(board[col][row] == 0){
                   if(player == 1){
-                      board[col][row] = 1;
-                      checkWin(col,row, player);
+                      startPos = [col * 100 + player1OffSet[0], player1OffSet[1], col, 0];
+                      endPos = [col * 100 + player1OffSet[0], row * 100 + player1OffSet[1], col, row]
+                      //board[col][row] = 1;
+                      //checkWin(col,row, player);
                       player = 2;
                   }else{
-                      board[col][row] = 2;
-                      checkWin(col,row, player);
+                      startPos = [col * 100 + player2OffSet[0], player2OffSet[1], col, 0];
+                      endPos = [col * 100 + player2OffSet[0], row * 100 + player2OffSet[1], col, row]
+                      //board[col][row] = 2;
+                      //checkWin(col,row, player);
                       player = 1;
                   }
+                  dropTimer = setInterval(dropPiece, 33);
+                  gameState = state.DROPPINGPIECE;
                   break;
               }  
             }
             draw();
         }
         
+    function dropPiece(){
+        startPos[1] += 30;
+        console.log("dropping");
+        if( startPos[1] >= endPos[1]){
+            clearInterval(dropTimer);
+            board[endPos[2]][endPos[3]] = player;
+            checkWin(endPos[2], endPos[3], player);
+            
+        }
+        draw();
+    }
+        
+        
     function checkWin(col,row, player){
-            //check vertical
-        let rowToCheck = row;
-        let count = 1;
-        while(rowToCheck > 0){
-            rowToCheck ++;
-            if (board[col][rowToCheck] == player){
-                count ++;
-            }else{
-                break;
+        let offsets = new Array(4);
+        
+        offsets[0] = [0,1]; //vertical
+        offsets[1] = [1,0]; //hotizontal
+        offsets[2] = [1,1]; //diagonal 1
+        offsets[3] = [-1,1]; //diagonal 2
+        
+        for(let i=0; i<4; i++){
+            
+            let rowToCheck = row;
+            let columnToCheck = col;
+            let count = 1;
+            
+            while( true ){
+                rowToCheck += offsets[i][1];
+                columnToCheck += offsets [i][0];
+                if(rowToCheck < 0 || columnToCheck < 0 || rowToCheck > 5 || columnToCheck > 6) break;
+                if (board[columnToCheck][rowToCheck] == player){
+                    count ++;
+                    console.log(count);
+                }else{
+                    break;
+                }
+            }
+
+            rowToCheck = row;
+            columnToCheck = col;
+            while( true ){
+                rowToCheck -= offsets[i][1];
+                columnToCheck -= offsets [i][0];
+                if(rowToCheck < 0 || columnToCheck < 0 || rowToCheck > 5 || columnToCheck > 6) break;
+                if (board[columnToCheck][rowToCheck] == player){
+                    count ++;
+                }else{
+                    break;
+                }
             }
             
             if( count >= 4){
-                gameState = player == 1 ? state.YELLOWWINS : state.REDWINS;
-                console.log("GAME OVER");
-            }
-        }
-        
-        rowToCheck = row;
-        while(rowToCheck < 5){
-            rowToCheck --;
-            if (board[col][rowToCheck] == player){
-                count ++;
-            }else{
+                    gameState = player == 1 ? state.YELLOWWINS : state.REDWINS;
+                    console.log("GAME OVER");
                 break;
+                }else{
+                    gameState = state.PLAYING;
+                }
             }
+        if( gameState == state.PLAYING) {
+            let draw = true;
+             for(let row = 0; row<6; row++){
+                for(let col = 0; col<7;col++){
+                    if(board[col][row] == 0){
+                        draw = false;
+                    }
+                }
+             }
+            if ( draw ){
+                gameState == state.DRAW;
+            } 
         }
-        }
+    }
         
         
       function draw() {
         var canvas = document.getElementById('tutorial');
         if (canvas.getContext) {
             var ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,726,626);
+            if(gameState == state.DROPPINGPIECE){
+                if(player == 1){
+                    ctx.drawImage(player1Image, startPos[0], startPos[1])
+                }else{
+                   ctx.drawImage(player2Image, startPos[0], startPos[1]) 
+                }
+            }
             ctx.drawImage(boardImage,0,0)
             for(let row = 0; row<6; row++){
                 for(let col = 0; col<7;col++){
@@ -143,11 +207,16 @@
                 }
            }
           if (gameState == state.REDWINS){
+            ctx.drawImage(blackQuad,0,0);
             ctx.drawImage(redWinsImage,200,200)
             ctx.drawImage(playAgainImage,200,350);
           }else if (gameState == state.YELLOWWINS){
+            ctx.drawImage(blackQuad,0,0);
             ctx.drawImage(yellowWinsImage,200,200)
             ctx.drawImage(playAgainImage,200,350);
+          }else if (gameState == state.draw){
+             ctx.drawImage(blackQuad,0,0); 
+              ctx.drawImage(playAgainImage,200,350);
           }
       }
         
