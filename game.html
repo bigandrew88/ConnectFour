@@ -56,9 +56,10 @@
             let y = event.clientY - rect.top; 
             console.log("Coordinate x: " + x,  "Coordinate y: " + y); 
             
-            if (gameState == state.PLAYING){
-            let col = parseInt(x/100);
-            placePiece(col);
+            if (gameState == state.PLAYING && player == 1){
+                let col = parseInt(x/100);
+                placePiece(col);
+                
             }else if ( gameState == state.DRAW || gameState == state.REDWINS || gameState == state.YELLOWWINS){
                if( x >= 200 && x <= 532 && y >= 350 && y <= 449){
                    gameState = state.PLAYING;
@@ -76,18 +77,15 @@
                   if(player == 1){
                       startPos = [col * 100 + player1OffSet[0], player1OffSet[1], col, 0];
                       endPos = [col * 100 + player1OffSet[0], row * 100 + player1OffSet[1], col, row]
-                      //board[col][row] = 1;
-                      //checkWin(col,row, player);
-                      player = 2;
                   }else{
                       startPos = [col * 100 + player2OffSet[0], player2OffSet[1], col, 0];
                       endPos = [col * 100 + player2OffSet[0], row * 100 + player2OffSet[1], col, row]
-                      //board[col][row] = 2;
-                      //checkWin(col,row, player);
-                      player = 1;
                   }
+                  console.log("Placing");
+                  
                   dropTimer = setInterval(dropPiece, 33);
                   gameState = state.DROPPINGPIECE;
+                  
                   break;
               }  
             }
@@ -100,10 +98,72 @@
         if( startPos[1] >= endPos[1]){
             clearInterval(dropTimer);
             board[endPos[2]][endPos[3]] = player;
-            checkWin(endPos[2], endPos[3], player);
+            gameState = checkWin(endPos[2], endPos[3], player);
+            if ( player == 1 ) {
+                player = 2;
+            } else {
+                player = 1;
+            }
             
+            if (gameState == state.PLAYING && player == 2) {
+                computerTurn();
+            }
         }
         draw();
+    }
+        
+    function computerTurn(){
+        console.log("Computer turn");
+        //
+        
+        for(let col = 0; col<7;col++){
+            for(let row = 0; row<6; row++){
+                if(board[col][row] == 0){
+                    board[col][row] = 1;
+                    let gameStateAfterMove = checkWin(col, row, 2);
+                    board[col][row] = 0;
+                    if( gameStateAfterMove == state.REDWINS){
+                        placePiece(col);
+                        return
+                    }
+                    break;
+                    
+                    }
+                }
+             }
+        
+        // Block the human
+        for(let col = 0; col<7;col++){
+            for(let row = 5; row>=0; row--){
+                if(board[col][row] == 0){
+                    board[col][row] = 1;
+                    let gameStateAfterMove = checkWin(col, row, 1);
+                    board[col][row] = 0;
+                    if( gameStateAfterMove == state.YELLOWWINS){
+                        placePiece(col);
+                        return
+                    }
+                    break;
+                    }
+                }
+             }
+        
+        // Random AI move
+        let randomColOffset = parseInt(Math.random() * 7);
+        for(let i = 0; i<7;i++){
+            
+            let col = i + randomColOffset;
+            col = col % 7;
+            
+            for(let row=5; row>=0; row--){
+                if(board[col][row] == 0){
+                     
+                    placePiece(col);
+                    return;
+                    
+                    }
+                }
+             }
     }
         
         
@@ -147,14 +207,10 @@
             }
             
             if( count >= 4){
-                    gameState = player == 1 ? state.YELLOWWINS : state.REDWINS;
                     console.log("GAME OVER");
-                break;
-                }else{
-                    gameState = state.PLAYING;
+                    return player == 1 ? state.YELLOWWINS : state.REDWINS;
                 }
             }
-        if( gameState == state.PLAYING) {
             let draw = true;
              for(let row = 0; row<6; row++){
                 for(let col = 0; col<7;col++){
@@ -164,9 +220,10 @@
                 }
              }
             if ( draw ){
-                gameState == state.DRAW;
-            } 
-        }
+                return state.DRAW;
+            } else {
+                return state.PLAYING;
+            }
     }
         
         
@@ -201,11 +258,6 @@
         
          }
           
-           for(let row = 0; row<6; row++){
-                for(let col = 0; col<7;col++){
-                    //ctx.strokeRect(col * 100, row * 100,100,100);
-                }
-           }
           if (gameState == state.REDWINS){
             ctx.drawImage(blackQuad,0,0);
             ctx.drawImage(redWinsImage,200,200)
